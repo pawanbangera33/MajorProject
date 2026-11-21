@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmearLab — AI Blood Smear Quality Analyzer</title>
+    <meta name="description" content="Professional AI-powered blood smear quality assessment using EfficientNet-B0 with Grad-CAM explainability.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Toast Container -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <!-- Header -->
+        <header class="site-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="microscope"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>SmearLab</h1>
+                    <span>Clinical AI Platform</span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#analyze" class="nav-link">Analyze</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#about" class="nav-link">About</a>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>AI Model Active</span>
+            </div>
+            <h2 class="hero-title">AI-Powered Blood Smear<br>Quality Assessment</h2>
+            <p class="hero-subtitle">
+                Instantly evaluate blood smear slide quality using deep learning.
+                Get confidence scores and explainable Grad-CAM visualizations in seconds.
+            </p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-value">94.2%</span>
+                    <span class="stat-label">Validation Accuracy</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">EfficientNet-B0</span>
+                    <span class="stat-label">Deep Learning Model</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">< 1s</span>
+                    <span class="stat-label">Inference Time</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sample Gallery -->
+        <section class="sample-gallery-section" id="analyze">
+            <div class="section-header">
+                <h3>Quick Test with Samples</h3>
+                <p>Try the model instantly with pre-loaded sample images</p>
+            </div>
+            <div class="sample-grid">
+                <div class="sample-card" data-sample="Image01.jpg">
+                    <div class="sample-img-wrap">
+                        <img src="{{ url_for('serve_sample', filename='Image01.jpg') }}" alt="Sample 1">
+                        <div class="sample-overlay">
+                            <i data-lucide="play-circle"></i>
+                            <span>Analyze</span>
+                        </div>
+                    </div>
+                    <span class="sample-name">Sample Image 1</span>
+                </div>
+                <div class="sample-card" data-sample="Image02.jpg">
+                    <div class="sample-img-wrap">
+                        <img src="{{ url_for('serve_sample', filename='Image02.jpg') }}" alt="Sample 2">
+                        <div class="sample-overlay">
+                            <i data-lucide="play-circle"></i>
+                            <span>Analyze</span>
+                        </div>
+                    </div>
+                    <span class="sample-name">Sample Image 2</span>
+                </div>
+                <div class="sample-card" data-sample="Image03.jpg">
+                    <div class="sample-img-wrap">
+                        <img src="{{ url_for('serve_sample', filename='Image03.jpg') }}" alt="Sample 3">
+                        <div class="sample-overlay">
+                            <i data-lucide="play-circle"></i>
+                            <span>Analyze</span>
+                        </div>
+                    </div>
+                    <span class="sample-name">Sample Image 3</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <div class="section-header">
+                <h3>Upload Your Image</h3>
+                <p>Drag and drop a blood smear image or click to browse</p>
+            </div>
+            <div class="upload-card" id="dropZone">
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <div class="upload-content" id="uploadContent">
+                    <div class="upload-icon-wrap">
+                        <i data-lucide="upload-cloud" class="upload-icon"></i>
+                    </div>
+                    <h4>Drop your image here</h4>
+                    <p class="upload-hint">or click to browse from your device</p>
+                    <span class="file-formats">JPG, PNG — up to 10MB</span>
+                    <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                        <i data-lucide="folder-open"></i> Select File
+                    </button>
+                </div>
+                <!-- Preview State (hidden initially) -->
+                <div class="upload-preview hidden" id="uploadPreview">
+                    <img id="previewImg" src="" alt="Preview">
+                    <div class="preview-actions">
+                        <button class="btn-primary" id="analyzeBtn">
+                            <i data-lucide="scan-line"></i> Analyze Image
+                        </button>
+                        <button class="btn-ghost" id="cancelPreviewBtn">
+                            <i data-lucide="x"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Section -->
+        <section class="loading-section hidden" id="loadingSection">
+            <div class="loader-card">
+                <div class="loader-animation">
+                    <div class="loader-ring"></div>
+                    <div class="loader-center">
+                        <i data-lucide="microscope"></i>
+                    </div>
+                </div>
+                <div class="loader-text">
+                    <h3>Analyzing Smear Quality...</h3>
+                    <p>Running EfficientNet-B0 inference and generating Grad-CAM heatmap</p>
+                </div>
+                <div class="loader-progress">
+                    <div class="loader-progress-bar" id="loaderProgressBar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section hidden" id="resultsSection">
+            <div class="results-header">
+                <div>
+                    <h2>Analysis Results</h2>
+                    <p class="results-meta">Grad-CAM explainable AI visualization</p>
+                </div>
+                <button class="btn-secondary" id="resetBtn">
+                    <i data-lucide="refresh-cw"></i> New Analysis
+                </button>
+            </div>
+
+            <!-- Prediction Card -->
+            <div class="prediction-card">
+                <div class="prediction-main">
+                    <div class="status-badge" id="statusBadge">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div class="confidence-area">
+                        <div class="confidence-header">
+                            <span class="confidence-label">Confidence Score</span>
+                            <span class="confidence-value" id="confidenceValue">--%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="confidenceBar"></div>
+                        </div>
+                        <div class="confidence-legend">
+                            <span>Low</span>
+                            <span>High</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="prediction-explanation" id="predictionExplanation">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Image Comparison -->
+            <div class="image-comparison">
+                <div class="image-panel">
+                    <div class="panel-header">
+                        <i data-lucide="image"></i>
+                        <h4>Original Image</h4>
+                    </div>
+                    <div class="panel-body">
+                        <img id="originalImage" src="" alt="Original Smear">
+                    </div>
+                </div>
+                <div class="image-panel">
+                    <div class="panel-header">
+                        <i data-lucide="flame"></i>
+                        <h4>Grad-CAM Heatmap</h4>
+                    </div>
+                    <div class="panel-body">
+                        <img id="gradcamImage" src="" alt="Grad-CAM Overlay">
+                    </div>
+                    <div class="panel-footer">
+                        <i data-lucide="info"></i>
+                        <span>Warm colors indicate regions the model focused on for its decision.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="section-header centered">
+                <h3>How It Works</h3>
+                <p>Three steps to get your smear quality assessment</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <div class="step-icon">
+                        <i data-lucide="upload"></i>
+                    </div>
+                    <h4>Upload</h4>
+                    <p>Upload a blood smear image or select from our sample gallery.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <div class="step-icon">
+                        <i data-lucide="brain-circuit"></i>
+                    </div>
+                    <h4>Analyze</h4>
+                    <p>Our EfficientNet-B0 model evaluates smear quality using deep features.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <div class="step-icon">
+                        <i data-lucide="eye"></i>
+                    </div>
+                    <h4>Explain</h4>
+                    <p>Grad-CAM visualization shows exactly where the AI looked.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Training Graphs -->
+        <section class="graphs-section" id="graphs">
+            <div class="section-header centered">
+                <h3>Training Graphs</h3>
+                <p>Accuracy & loss curves from model training</p>
+            </div>
+
+            <div class="graphs-grid">
+                <div class="graph-card">
+                    <div class="graph-header">
+                        <i data-lucide="trending-up"></i>
+                        <h4>Accuracy vs Epoch</h4>
+                    </div>
+                    <div class="graph-body">
+                        <img src="{{ url_for('static', filename='accuracy_vs_epoch.png') }}" alt="Accuracy vs Epoch">
+                    </div>
+                </div>
+
+                <div class="graph-card">
+                    <div class="graph-header graph-header-danger">
+                        <i data-lucide="trending-down"></i>
+                        <h4>Loss vs Epoch</h4>
+                    </div>
+                    <div class="graph-body">
+                        <img src="{{ url_for('static', filename='loss_vs_epoch.png') }}" alt="Loss vs Epoch">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About / Technical -->
+        <section class="technical-section" id="about">
+            <div class="tech-card">
+                <div class="tech-header">
+                    <i data-lucide="cpu"></i>
+                    <h4>Model Architecture</h4>
+                </div>
+                <div class="tech-body">
+                    <div class="tech-row">
+                        <span class="tech-key">Base Model</span>
+                        <span class="tech-val">EfficientNet-B0</span>
+                    </div>
+                    <div class="tech-row">
+                        <span class="tech-key">Input Size</span>
+                        <span class="tech-val">224 &times; 224 px</span>
+                    </div>
+                    <div class="tech-row">
+                        <span class="tech-key">Classes</span>
+                        <span class="tech-val">Good Smear / Bad Smear</span>
+                    </div>
+                    <div class="tech-row">
+                        <span class="tech-key">Explainability</span>
+                        <span class="tech-val">Grad-CAM (Gradient-weighted Class Activation Mapping)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon small">
+                        <i data-lucide="microscope"></i>
+                    </div>
+                    <span>SmearLab</span>
+                </div>
+                <p class="footer-copy"> AI Blood Smear Quality Assessment. Built with PyTorch, Flask &amp; EfficientNet.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
+
